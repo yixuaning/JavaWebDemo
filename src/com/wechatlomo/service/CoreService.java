@@ -1,10 +1,14 @@
 package com.wechatlomo.service;
 
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.wechatlomo.message.resp.Article;
+import com.wechatlomo.message.resp.NewsMessage;
 import com.wechatlomo.message.resp.TextMessage;
 import com.wechatlomo.util.MessageUtil;
 
@@ -24,9 +28,6 @@ public class CoreService {
     public static String processRequest(HttpServletRequest request) {  
         String respMessage = null;  
         try {  
-            // 默认返回的文本消息内容  
-            String respContent = "请求处理异常，请稍候尝试！";  
-  
             // xml请求解析  
             Map<String, String> requestMap = MessageUtil.parseXml(request);  
   
@@ -37,54 +38,57 @@ public class CoreService {
             // 消息类型  
             String msgType = requestMap.get("MsgType");  
   
-            // 回复文本消息  
+            // 默认回复此文本消息  
             TextMessage textMessage = new TextMessage();  
             textMessage.setToUserName(fromUserName);  
             textMessage.setFromUserName(toUserName);  
             textMessage.setCreateTime(new Date().getTime());  
             textMessage.setMsgType(MessageUtil.RESP_MESSAGE_TYPE_TEXT);  
             textMessage.setFuncFlag(0);  
+            // 由于href属性值必须用双引号引起，这与字符串本身的双引号冲突，所以要转义  
+            textMessage.setContent("欢迎关注WeChatLomo，这是一个有节操的产品，目前处于开发阶段。有问题请联系<a href=\"yixuaning@sina.com\">我的邮箱/a>!");  
+            // 将文本消息对象转换成xml字符串  
+            respMessage = MessageUtil.textMessageToXml(textMessage);  
   
             // 文本消息  
             if (msgType.equals(MessageUtil.REQ_MESSAGE_TYPE_TEXT)) {  
-                respContent = "您发送的是文本消息！";  
-            }  
-            // 图片消息  
-            else if (msgType.equals(MessageUtil.REQ_MESSAGE_TYPE_IMAGE)) {  
-                respContent = "您发送的是图片消息！";  
-            }  
-            // 地理位置消息  
-            else if (msgType.equals(MessageUtil.REQ_MESSAGE_TYPE_LOCATION)) {  
-                respContent = "您发送的是地理位置消息！";  
-            }  
-            // 链接消息  
-            else if (msgType.equals(MessageUtil.REQ_MESSAGE_TYPE_LINK)) {  
-                respContent = "您发送的是链接消息！";  
-            }  
-            // 音频消息  
-            else if (msgType.equals(MessageUtil.REQ_MESSAGE_TYPE_VOICE)) {  
-                respContent = "您发送的是音频消息！";  
-            }  
-            // 事件推送  
-            else if (msgType.equals(MessageUtil.REQ_MESSAGE_TYPE_EVENT)) {  
-                // 事件类型  
-                String eventType = requestMap.get("Event");  
-                // 订阅  
-                if (eventType.equals(MessageUtil.EVENT_TYPE_SUBSCRIBE)) {  
-                    respContent = "谢谢您的关注！";  
-                }  
-                // 取消订阅  
-                else if (eventType.equals(MessageUtil.EVENT_TYPE_UNSUBSCRIBE)) {  
-                    // TODO 取消订阅后用户再收不到公众号发送的消息，因此不需要回复消息  
-                }  
-                // 自定义菜单点击事件  
-                else if (eventType.equals(MessageUtil.EVENT_TYPE_CLICK)) {  
-                    // TODO 自定义菜单权没有开放，暂不处理该类消息  
-                }  
-            }  
+                // 接收用户发送的文本消息内容  
+                String content = requestMap.get("Content");  
   
-            textMessage.setContent(respContent);  
-            respMessage = MessageUtil.textMessageToXml(textMessage);  
+                // 创建图文消息  
+                NewsMessage newsMessage = new NewsMessage();  
+                newsMessage.setToUserName(fromUserName);  
+                newsMessage.setFromUserName(toUserName);  
+                newsMessage.setCreateTime(new Date().getTime());  
+				newsMessage.setMsgType(MessageUtil.RESP_MESSAGE_TYPE_NEWS);
+				newsMessage.setFuncFlag(0);
+
+				List<Article> articleList = new ArrayList<Article>();
+				Article article1 = new Article();
+				article1.setTitle("关于WeChatLomo\n引言");
+				article1.setDescription("");
+				article1.setPicUrl("http://wechatlomo.duapp.com/images/wechatlomo.jpeg");
+				article1.setUrl("http://wechatlomo.duapp.com/index.html");
+
+				Article article2 = new Article();
+				article2.setTitle("你就不想了解一下该产品的程序狗？");
+				article2.setDescription("");
+				article2.setPicUrl("http://wechatlomo.duapp.com/images/yasin.jpg");
+				article2.setUrl("http://wechatlomo.duapp.com/blog.htm");
+
+				Article article3 = new Article();
+				article3.setTitle("WeChatLomo还缺产品狗，你来不来？");
+				article3.setDescription("");
+				article3.setPicUrl("http://wechatlomo.duapp.com/images/gallery_img_8.png");
+				article3.setUrl("http://wechatlomo.duapp.com/index.html");
+
+				articleList.add(article1);
+				articleList.add(article2);
+				articleList.add(article3);
+				newsMessage.setArticleCount(articleList.size());
+				newsMessage.setArticles(articleList);
+				respMessage = MessageUtil.newsMessageToXml(newsMessage);
+			}
         } catch (Exception e) {  
             e.printStackTrace();  
         }  
